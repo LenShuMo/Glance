@@ -1367,6 +1367,18 @@ async fn ocr_extract_text(
     })
 }
 
+// ── Clipboard ───────────────────────────────────────────────────────────────
+
+/// 把主窗口译文区的文字写进系统剪贴板（右下角「复制」按钮用）。
+///
+/// 前端优先调这里，而不是 `navigator.clipboard`：macOS 的 WKWebView 对剪贴板
+/// 写入还有额外限制，而这里复用的正是「截图复制」那条 arboard 实现，两个入口
+/// 行为一致，也不用给窗口额外开什么权限。
+#[tauri::command]
+pub fn copy_text(text: String) -> AppResult<()> {
+    copy_to_clipboard(&text)
+}
+
 fn copy_to_clipboard(text: &str) -> AppResult<()> {
     let mut clipboard = arboard::Clipboard::new()
         .map_err(|e| AppError::Capture(format!("clipboard init failed: {e}")))?;

@@ -479,6 +479,18 @@ function renderMain() {
             <div class="output-primary" id="output-primary"></div>
             <div class="output-alternatives" id="output-alternatives"></div>
           </div>
+          <div class="output-actions">
+            <button type="button" class="copy-btn" id="copy-btn" title="复制译文" aria-label="复制译文" disabled>
+              <svg class="copy-ico" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                <g class="ico-copy">
+                  <rect x="5.6" y="5.6" width="7.9" height="7.9" rx="2.1"/>
+                  <path d="M10.5 3.3a2 2 0 0 0-1.7-1H4.3A1.8 1.8 0 0 0 2.5 4.1v4.6c0 .7.3 1.3.8 1.7"/>
+                </g>
+                <path class="ico-check" d="M3.4 8.3l3 3.1 6.2-6.6"/>
+              </svg>
+              <span class="copy-label">复制</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -639,6 +651,10 @@ function renderMain() {
     saveSettings().catch(() => {});
   });
   document.querySelector("#tts-btn").addEventListener("click", speakInput);
+  // 译文区右下角的复制按钮。renderMain() 每次都会整块换掉 innerHTML，所以绑定
+  // 和初始状态都放在这里，重新渲染后按钮不会变成点不动的死按钮。
+  document.querySelector("#copy-btn").addEventListener("click", copyTranslation);
+  updateCopyButton();
 
   // 版本 / 检查更新
   bindUpdateRow();
@@ -744,6 +760,9 @@ function updateOutputArea() {
 
   const btn = document.querySelector("#capture-btn");
   if (btn) btn.disabled = state.loading;
+
+  // 译文一变，右下角复制按钮的可用状态也跟着变（没有译文时是禁用态）。
+  updateCopyButton();
 }
 
 function updateDetectedLang() {
@@ -844,6 +863,99 @@ function speakInput() {
   const btn = document.querySelector("#tts-btn");
   if (btn) btn.classList.add("speaking");
   window.speechSynthesis.speak(utt);
+}
+
+/* ── Copy translation ── */
+
+// 译文区右下角的「复制」按钮。复制成功后按钮自己变一小会儿「已复制 / ✓」，不弹
+// toast：这个窗口本来就小，多一层浮层反而挡住译文。
+const COPY_FEEDBACK_MS = 1500;
+let copyFeedbackTimer = null;
+
+function copyableTranslation() {
+  // 翻译中的半成品不复制：现在每次请求都会先清空译文，这里只是把「什么时候
+  // 可以复制」这个判断收到一处。
+  if (state.textLoading) return "";
+  return (state.translatedText || "").trim();
+}
+
+function updateCopyButton() {
+  const btn = document.querySelector("#copy-btn");
+  if (!btn) return;
+  const text = copyableTranslation();
+  btn.disabled = !text;
+  // 没有可复制的内容时，「已复制」的反馈也不该继续挂在按钮上。
+  if (!text) resetCopyFeedback(btn);
+}
+
+function resetCopyFeedback(btn) {
+  clearTimeout(copyFeedbackTimer);
+  copyFeedbackTimer = null;
+  if (!btn) return;
+  btn.classList.remove("copied", "copy-failed");
+  setCopyButtonLabel(btn, "复制", "复制译文");
+}
+
+function setCopyButtonLabel(btn, label, title) {
+  const labelEl = btn.querySelector(".copy-label");
+  if (labelEl) labelEl.textContent = label;
+  btn.title = title;
+  btn.setAttribute("aria-label", title);
+}
+
+function flashCopyFeedback(btn, ok) {
+  if (!btn) return;
+  clearTimeout(copyFeedbackTimer);
+  btn.classList.toggle("copied", ok);
+  btn.classList.toggle("copy-failed", !ok);
+  setCopyButtonLabel(btn, ok ? "已复制" : "复制失败", ok ? "已复制" : "复制失败，请手动选中译文复制");
+  copyFeedbackTimer = setTimeout(() => resetCopyFeedback(btn), COPY_FEEDBACK_MS);
+}
+
+async function writeClipboardText(text) {
+  // 优先走后端的 arboard（copy_text 命令）：和「截图复制」是同一条实现，macOS 的
+  // WKWebView 对 navigator.clipboard 还有额外限制，走后端两个平台行为一致。
+  if (invoke) {
+    try {
+      await invoke("copy_text", { text });
+      return;
+    } catch (err) {
+      // 浏览器预览、或后端还没升级到带这个命令的版本：继续往下试 Web API。
+    }
+  }
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  // 最后兜底：没有 navigator.clipboard 的老 WebView。
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.setAttribute("readonly", "");
+  ta.style.position = "fixed";
+  ta.style.top = "-1000px";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try {
+    ok = document.execCommand("copy");
+  } finally {
+    ta.remove();
+  }
+  if (!ok) throw new Error("clipboard unavailable");
+}
+
+async function copyTranslation() {
+  const text = copyableTranslation();
+  if (!text) return;
+  const btn = document.querySelector("#copy-btn");
+  try {
+    await writeClipboardText(text);
+  } catch (err) {
+    flashCopyFeedback(btn, false);
+    return;
+  }
+  flashCopyFeedback(btn, true);
 }
 
 /* ── Hotkey recorder ── */

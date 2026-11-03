@@ -27,7 +27,7 @@ use builtin_translate::BuiltinTranslateClient;
 use llm_translate::LlmTranslateClient;
 use commands::{
     begin_capture, begin_copy_capture, cancel_capture, capture_debug_log, check_update,
-    clear_history, close_overlay, hide_window, list_history, load_capture_payload,
+    clear_history, close_overlay, copy_text, hide_window, list_history, load_capture_payload,
     load_overlay_payload, load_settings, open_release_page, resize_main_window, save_settings,
     set_pin_on_top, show_overlay, start_capture_translate, submit_capture_selection,
     translate_text,
@@ -230,6 +230,7 @@ fn main() {
             load_overlay_payload,
             close_overlay,
             translate_text,
+            copy_text,
             resize_main_window,
             set_pin_on_top,
             hide_window,

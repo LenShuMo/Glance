@@ -388,6 +388,54 @@ body.capture-preparing *::after {
   line-height: 1.4;
 }
 
+/* ── 译文区右下角的复制按钮 ── */
+/* 和左栏 .meta-info 同一行高，两栏底部因此能对齐；按钮贴右，就落在译文区的
+   右下角。行本身常驻，只切按钮的可用状态，避免译文一出来整块高度跳一下。 */
+.output-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  min-height: 22px;
+  padding-top: 4px;
+}
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-sub);
+  padding: 2px 8px;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s, opacity 0.15s;
+}
+.copy-btn:hover { color: var(--text-main); background: rgba(0,0,0,0.04); }
+.copy-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.copy-btn:disabled { opacity: 0.38; cursor: default; }
+.copy-btn:disabled:hover { color: var(--text-sub); background: none; }
+.copy-btn.copied,
+.copy-btn.copied:hover { color: var(--text-main); background: var(--accent); }
+.copy-btn.copy-failed,
+.copy-btn.copy-failed:hover { color: #B91C1C; background: rgba(185,28,28,0.08); }
+.copy-ico {
+  width: 12px;
+  height: 12px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.copy-ico .ico-check { display: none; }
+.copy-btn.copied .copy-ico .ico-copy { display: none; }
+.copy-btn.copied .copy-ico .ico-check { display: inline; }
+
 /* ── Capture button in header ── */
 .capture-btn {
   background: none;

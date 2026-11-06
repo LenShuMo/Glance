@@ -1,3 +1,6 @@
+# Fork 项目https://github.com/Harukaon/Glance
+用DeepSeek加了翻译面板一键复制功能
+
 # Glance
 
 一款轻量级桌面截图翻译工具。快捷键截屏，框选即翻译，基于有道 OCR 实现实时图片翻译。
